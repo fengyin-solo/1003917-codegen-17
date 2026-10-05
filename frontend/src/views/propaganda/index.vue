@@ -11,6 +11,189 @@
       </div>
     </header>
 
+    <section class="panel" data-panel="coverage-board">
+      <div class="panel-head">
+        <h3 class="panel-title">覆盖热区台</h3>
+        <div class="page-actions">
+          <button class="btn" type="button" @click="makeUp">按乡镇补齐缺覆盖</button>
+          <button class="btn primary" type="button" @click="confirm">确认排期</button>
+        </div>
+      </div>
+      <p class="hint-text">
+        冲突优先规则：{{ priorityRule }}；跨村借用物资须经权属村确认后，对应场次才能参与确认。
+      </p>
+      <p v-if="boardMessage" class="board-message" :class="{ 'error-text': boardError }">{{ boardMessage }}</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>乡镇</th>
+            <th>村组</th>
+            <th>宣传方式</th>
+            <th>计划场次</th>
+            <th>已确认覆盖</th>
+            <th>在途覆盖</th>
+            <th>历史已覆盖</th>
+            <th>应覆盖</th>
+            <th>缺口</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in board" :key="`${row.villageId}-${row.method}`">
+            <td>{{ row.township }}</td>
+            <td>{{ row.village }}</td>
+            <td>{{ row.method }}</td>
+            <td>{{ row.sessions }}</td>
+            <td>{{ row.confirmedCover }}</td>
+            <td>{{ row.pendingCover }}</td>
+            <td>{{ row.coveredHistory }}</td>
+            <td>{{ row.population }}</td>
+            <td :class="{ 'gap-cell': row.gap > 0 }">{{ row.gap > 0 ? row.gap : '—' }}</td>
+          </tr>
+          <tr v-if="!board.length">
+            <td colspan="9" class="empty-state">暂无村组覆盖数据</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4 class="sub-title">场次排期</h4>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>场次编号</th>
+            <th>乡镇</th>
+            <th>村组</th>
+            <th>宣传方式</th>
+            <th>日期</th>
+            <th>场地</th>
+            <th>人员</th>
+            <th>计划覆盖</th>
+            <th>物资调配</th>
+            <th>来源</th>
+            <th>状态</th>
+            <th>备注</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in sessions" :key="row.id">
+            <td>{{ row.id }}</td>
+            <td>{{ row.township }}</td>
+            <td>{{ row.village }}</td>
+            <td>{{ row.method }}</td>
+            <td>{{ row.date }}</td>
+            <td>{{ row.venue }}</td>
+            <td>{{ row.workers }}</td>
+            <td>{{ row.plannedCoverage }}</td>
+            <td>{{ row.materials }}</td>
+            <td>{{ row.source }}</td>
+            <td>
+              <span class="badge" :class="sessionBadge(row.status)">{{ row.status }}</span>
+            </td>
+            <td>{{ row.note }}</td>
+          </tr>
+          <tr v-if="!sessions.length">
+            <td colspan="12" class="empty-state">暂无排期场次，可先按乡镇补齐缺覆盖</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="sub-grid">
+        <div>
+          <h4 class="sub-title">可调度人员</h4>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>姓名</th>
+                <th>乡镇</th>
+                <th>角色</th>
+                <th>已排期</th>
+                <th>占用日期</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in workers" :key="row.id">
+                <td>{{ row.name }}</td>
+                <td>{{ row.township }}</td>
+                <td>{{ row.role }}</td>
+                <td>{{ row.booked }} 场</td>
+                <td>{{ row.dates }}</td>
+                <td>
+                  <span class="badge" :class="row.dispatchable ? 'ok' : 'warn'">
+                    {{ row.dispatchable ? '可调度' : '已排期' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4 class="sub-title">物资余量</h4>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>物资</th>
+                <th>权属村组</th>
+                <th>总量</th>
+                <th>已确认占用</th>
+                <th>待确认占用</th>
+                <th>余量</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in materials" :key="row.id">
+                <td>{{ row.name }}</td>
+                <td>{{ row.ownerVillage }}</td>
+                <td>{{ row.total }}</td>
+                <td>{{ row.confirmedUse }}</td>
+                <td>{{ row.pendingUse }}</td>
+                <td :class="{ 'gap-cell': row.left < 0 }">{{ row.left }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h4 class="sub-title">跨村借用审批</h4>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>借用单号</th>
+            <th>关联场次</th>
+            <th>物资</th>
+            <th>权属村组</th>
+            <th>借入村组</th>
+            <th>数量</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in borrows" :key="row.id">
+            <td>{{ row.id }}</td>
+            <td>{{ row.sessionId }}</td>
+            <td>{{ row.material }}</td>
+            <td>{{ row.fromVillage }}</td>
+            <td>{{ row.toVillage }}</td>
+            <td>{{ row.quantity }}</td>
+            <td>
+              <span class="badge" :class="borrowBadge(row.status)">{{ row.status }}</span>
+            </td>
+            <td class="row-actions">
+              <template v-if="row.status === '待权属确认'">
+                <button class="link" type="button" @click="settleBorrow(row.id, true)">同意出借</button>
+                <button class="link" type="button" @click="settleBorrow(row.id, false)">拒绝</button>
+              </template>
+              <span v-else>—</span>
+            </td>
+          </tr>
+          <tr v-if="!borrows.length">
+            <td colspan="8" class="empty-state">暂无跨村借用申请</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <div class="stat-row">
       <article v-for="item in stats" :key="item.label" class="stat-card">
         <span class="stat-label">{{ item.label }}</span>
@@ -74,6 +257,22 @@
 import { computed, onMounted, ref } from 'vue'
 
 import {
+  PRIORITY_RULE,
+  boardRows,
+  borrowRows,
+  confirmSchedule,
+  generateMakeUp,
+  materialRows,
+  resolveBorrow,
+  sessionRows,
+  workerRows,
+  type BoardRow,
+  type BorrowRow,
+  type MaterialRow,
+  type SessionRow,
+  type WorkerRow,
+} from '@/api/coverage-service'
+import {
   downloadEntries,
   listEntries,
   moduleMeta,
@@ -98,6 +297,67 @@ const statusSummary = computed(() =>
     count: rows.value.filter((row) => String(row.status) === status).length,
   })),
 )
+
+const priorityRule = PRIORITY_RULE
+const board = ref<BoardRow[]>([])
+const sessions = ref<SessionRow[]>([])
+const workers = ref<WorkerRow[]>([])
+const materials = ref<MaterialRow[]>([])
+const borrows = ref<BorrowRow[]>([])
+const boardMessage = ref('')
+const boardError = ref(false)
+
+function sessionBadge(status: string): string {
+  if (status === '已确认') {
+    return 'ok'
+  }
+  if (status === '冲突暂缓') {
+    return 'err'
+  }
+  return 'warn'
+}
+
+function borrowBadge(status: string): string {
+  if (status === '已同意') {
+    return 'ok'
+  }
+  if (status === '已拒绝') {
+    return 'err'
+  }
+  return 'warn'
+}
+
+function refreshBoard() {
+  board.value = boardRows()
+  sessions.value = sessionRows()
+  workers.value = workerRows()
+  materials.value = materialRows()
+  borrows.value = borrowRows()
+}
+
+function makeUp() {
+  boardError.value = false
+  const result = generateMakeUp()
+  boardMessage.value = result.message
+  refreshBoard()
+}
+
+function confirm() {
+  boardError.value = false
+  const result = confirmSchedule()
+  boardMessage.value = result.message
+  boardError.value = !result.ok && !result.duplicated
+  refreshBoard()
+  reload()
+}
+
+function settleBorrow(id: string, approve: boolean) {
+  boardError.value = false
+  const result = resolveBorrow(id, approve)
+  boardMessage.value = result.message
+  boardError.value = !result.ok
+  refreshBoard()
+}
 
 function resetFilters() {
   filters.value = {}
@@ -133,5 +393,8 @@ function reload() {
   }
 }
 
-onMounted(reload)
+onMounted(() => {
+  reload()
+  refreshBoard()
+})
 </script>
