@@ -11,6 +11,8 @@
       </div>
     </header>
 
+    <CoverageBoard @generated="reload" />
+
     <div class="stat-row">
       <article v-for="item in stats" :key="item.label" class="stat-card">
         <span class="stat-label">{{ item.label }}</span>
@@ -80,6 +82,7 @@ import {
   runAction as applyAction,
 } from '@/api/local-service'
 import type { EntryRow } from '@/data/types'
+import CoverageBoard from '@/views/propaganda/CoverageBoard.vue'
 
 const meta = moduleMeta('propaganda')
 const columns = ["活动编号", "宣传主题", "宣传方式", "覆盖村组", "活动日期", "参与人数", "组织人", "活动状态"]

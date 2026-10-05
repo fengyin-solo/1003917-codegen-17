@@ -69,3 +69,18 @@ npm run build
   `frontend/src/data/seed.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
 - 想回到初始数据：清掉浏览器里 `geohazard-monitor-prevention:entries` 这一项，或调用 `resetModule(模块)`。
+
+## 防灾宣传 · 覆盖热区台
+
+防灾宣传页顶部内嵌「覆盖热区台」（`frontend/src/views/propaganda/CoverageBoard.vue`）：
+
+- 按乡镇、村组、宣传方式排列计划场次、覆盖人数与缺口，同一面展示可调度人员占用情况与物资余量。
+- 历史覆盖不足的村组可按所属乡镇一键补齐场次（自动选日期、负责人与标准物资包）。
+- 场地或人员撞期时按「已确认场次 ＞ 历史缺覆盖村组 ＞ 威胁人口多 ＞ 提交时间早」定先后，
+  落选场次标记「冲突待调」，可一键顺延。
+- 确认排期后真正写入三个模块：防灾宣传活动、群测群防培训联动课程、隐患点台账宣传提醒；
+  同一排期重复确认只保留一版，不重复生成。
+- 跨村借用物资自动生成借用单，需权属村组确认后排期才能生效。
+- 热区台逻辑在 `frontend/src/api/coverage-service.ts`，领域数据在 `frontend/src/data/coverage.ts`，
+  排期状态持久化在 `geohazard-monitor-prevention:coverage`。
+- 冒烟测试（无需浏览器，node 直跑）：`cd frontend && npm run smoke`。
